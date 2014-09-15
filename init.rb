@@ -1,16 +1,3 @@
-# redefined Heroku::Command:Ps::PRICES without warning
-# http://stackoverflow.com/questions/3375360/how-to-redefine-a-ruby-constant-without-warning
-
-prices = {
-  "Free"        =>    0.0 / 720,
-  "Hobby"       =>   9.00 / 720,
-  "Production"  =>  30.00 / 720,
-  "PX"          => 500.00 / 720, 
-}
-
-Heroku::Command::Ps.send(:remove_const, :PRICES)
-Heroku::Command::Ps.const_set(:PRICES, prices)
-
 PROCESS_TIERS = JSON.parse <<EOF
 [
   { "tier": "free",       "max_scale": 1,   "max_processes": 2,    "cost": { "Free": 0 } },
@@ -19,6 +6,20 @@ PROCESS_TIERS = JSON.parse <<EOF
   { "tier": "legacy",     "max_scale": 100, "max_processes": null, "cost": { "1X": 3000, "2X": 6000, "PX": 500000 } }
 ]
 EOF
+
+
+# calculate approximate dollars per hour for each dyno type
+costs = PROCESS_TIERS.collect do |tier|
+  tier["cost"].collect do |name, cents_per_month|
+    [name, (cents_per_month / 720.0).floor / 100.0]
+  end
+end
+
+# redefine Heroku::Command:Ps::PRICES without warning
+# http://stackoverflow.com/questions/3375360/how-to-redefine-a-ruby-constant-without-warning
+prices = Hash[*costs.flatten]
+Heroku::Command::Ps.send(:remove_const, :PRICES)
+Heroku::Command::Ps.const_set(:PRICES, prices)
 
 class Heroku::Command::Ps
   # ps:tier [free|hobby|production]
