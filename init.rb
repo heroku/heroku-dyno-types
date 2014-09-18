@@ -3,7 +3,7 @@ PROCESS_TIERS = JSON.parse <<EOF
   { "tier": "free",       "max_scale": 1,   "max_processes": 2,    "cost": { "Free": 0 } },
   { "tier": "hobby",      "max_scale": 1,   "max_processes": null, "cost": { "Hobby": 900 } },
   { "tier": "production", "max_scale": 100, "max_processes": null, "cost": { "Production": 3000, "Performance": 50000 } },
-  { "tier": "legacy",     "max_scale": 100, "max_processes": null, "cost": { "1X": 3000, "2X": 6000, "PX": 50000 } }
+  { "tier": "legacy",     "max_scale": 100, "max_processes": null, "cost": { "1X": 3600, "2X": 7200, "PX": 57600 } }
 ]
 EOF
 
