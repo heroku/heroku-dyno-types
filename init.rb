@@ -7,7 +7,6 @@ PROCESS_TIERS = JSON.parse <<EOF
 ]
 EOF
 
-
 # calculate approximate dollars per hour for each dyno type
 costs = PROCESS_TIERS.collect do |tier|
   tier["cost"].collect do |name, cents_per_month|
@@ -24,47 +23,68 @@ Heroku::Command::Ps.const_set(:PRICES, prices)
 class Heroku::Command::Ps
   # ps:tier [free|hobby|production]
   #
-  # resize and scale dynos between different tiers
+  # resize and scale all process types between different process tiers
   #
   #Examples:
   #
   # $ heroku ps:tier 
-  # Running web at 1:Free ($0/mo), worker at 1:Free ($0/mo)
+  # Running web at 1:Free ($0/mo), worker at 1:Free ($0/mo).
   #
   # $ heroku ps:tier hobby
-  # Changing dynos... done, now running web at 1:Hobby ($9/mo), worker at 1:Hobby ($9/mo)
+  # Changing process tier... done, now running web at 1:Hobby ($9/mo), worker at 1:Hobby ($9/mo)
   #
   # $ heroku ps:scale web=2
   # Scaling dynos... failed
-  # !    Cannot scale to more than 1 Hobby size dynos per process type.
+  #  !    Cannot scale to more than 1 Hobby size dynos per process type.
   #
   # $ heroku ps:tier production
-  # Changing dynos... done, now running web at 1:Production ($30/mo), worker at 1:Production ($30/mo)
+  # Changing process tier... done, now running web at 1:Production ($30/mo), worker at 1:Production ($30/mo).
   #
   # $ heroku ps:scale web=2
-  # Scaling dynos... done, now running web at 2:Production
+  # Scaling dynos... done, now running web at 2:Production.
   # 
   # $ heroku ps:tier hobby
-  # Changing dynos... done, now running web at 1:Hobby ($9/mo), worker at 1:Hobby ($9/mo)
-  
+  # Changing process tier... done, now running web at 1:Hobby ($9/mo), worker at 1:Hobby ($9/mo)
+
   def tier
     app
-    tier_name = shift_argument.downcase
+    process_tier = shift_argument
     validate_arguments!
 
-    tiers = PROCESS_TIERS.reject { |t| t["tier"] == "legacy" }
-    tier_names = tiers.map { |t| t["tier"] }
+    # get or update app.process_tier
+    if !process_tier.nil?
+      print "Changing process tier... "
 
-    unless api.get_feature("new-dyno-sizes", app).body["enabled"]
-      raise Heroku::Command::CommandFailed.new("Cannot change process tier on this app.")
+      app_resp = api.request(
+        :method  => :patch,
+        :path    => "/apps/#{app}",
+        :body    => json_encode("process_tier" => process_tier.downcase),
+        :headers => {
+          "Accept"       => "application/vnd.heroku+json; version=edge",
+          "Content-Type" => "application/json"
+        }
+      )
+
+      if app_resp.status != 200
+        puts "failed"
+        error app_resp.body["message"]
+      end
+
+      print "done. "
+    else
+      app_resp = api.request(
+        :expects => 200,
+        :method  => :get,
+        :path    => "/apps/#{app}",
+        :headers => {
+          "Accept"       => "application/vnd.heroku+json; version=edge",
+          "Content-Type" => "application/json"
+        }
+      )
     end
 
-    if !tier_names.include? tier_name
-      raise Heroku::Command::CommandFailed.new("No such process tier as #{tier_name}. Available process tiers are #{tier_names.join(", ")}.")
-    end
-
-    # get formation
-    resp = api.request(
+    # get, calculate and display app process type costs
+    formation_resp = api.request(
       :expects => 200,
       :method  => :get,
       :path    => "/apps/#{app}/formation",
@@ -74,72 +94,13 @@ class Heroku::Command::Ps
       }
     )
 
-    formation = resp.body
+    tier_info = PROCESS_TIERS.detect { |t| t["tier"] == app_resp.body["process_tier"] }
 
-    if tier_name == nil
-      puts "DETECTING TIER"
-      return
+    ps_costs = formation_resp.body.map do |ps|
+      cost = tier_info["cost"][ps["size"]] * ps["quantity"] / 100
+      "#{ps['type']} at #{ps['quantity']}:#{ps["size"]} ($#{cost}/mo)"
     end
 
-    tier = tiers.detect { |t| t["tier"] == tier_name }
-
-    # validate max_processes    
-    if tier["max_processes"] && tier["max_processes"] < formation.map { |p| p["quantity"] }.inject(:+)
-      raise Heroku::Command::CommandFailed.new("Cannot change process tier to #{tier_name}. App currently has more than #{tier['max_processes']} process types.")
-    end
-
-    # if free or hobby, first scale to max_scale
-    if ["free", "hobby"].include? tier_name
-      # TODO: Fix size+scale bug in API and remove this extra action
-      if tier["max_scale"] && tier["max_scale"] < formation.map { |p| p["quantity"] }.max
-        changes = formation.map { |p| 
-          { 
-            "process"   => p["type"],
-            "quantity"  => p["quantity"] == 0 ? 0 : 1
-          }
-        }
-
-        action("Changing process tier to #{tier_name} by scaling dynos") do
-          resp = api.request(
-            :expects => 200,
-            :method  => :patch,
-            :path    => "/apps/#{app}/formation",
-            :body    => json_encode("updates" => changes),
-            :headers => {
-              "Accept"       => "application/vnd.heroku+json; version=3",
-              "Content-Type" => "application/json"
-            }
-          )
-        end
-      end
-
-      changes = formation.map { |p| 
-        { 
-          "process" => p["type"], 
-          "size" => tier_name, 
-        }
-      }
-
-    elsif tier_name == "production"
-      changes = formation.map { |p| 
-        { 
-          "process"   => p["type"], 
-          "size"      => p["size"] == "PX" ? "PX" : "production", 
-        }
-      }
-    end    
-
-    action("Changing process tier to #{tier_name} by resizing and restarting dynos") do
-      resp = api.request(
-        :expects => 200,
-        :method  => :patch,
-        :path    => "/apps/#{app}/formation",
-        :body    => json_encode("updates" => changes),
-        :headers => {
-          "Accept"       => "application/vnd.heroku+json; version=3",
-          "Content-Type" => "application/json"
-        }
-      )
-    end
+    puts "Running #{ps_costs.join(", ")}."
   end
 end
