@@ -101,6 +101,13 @@ class Heroku::Command::Ps
       "#{ps['type']} at #{ps['quantity']}:#{ps["size"]} ($#{cost}/mo)"
     end
 
-    puts "Running #{ps_costs.join(", ")}."
+    if ps_costs.empty?
+      ps_costs = tier_info["cost"].map do |size, cost|
+        "#{size} ($#{cost/100}/mo)"
+      end
+      puts "Running no #{ps_costs.join(", ")} processes."
+    else
+      puts "Running #{ps_costs.join(', ')}."
+    end
   end
 end
