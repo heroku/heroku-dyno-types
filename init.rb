@@ -67,7 +67,7 @@ class Heroku::Command::Ps
 
       if app_resp.status != 200
         puts "failed"
-        error app_resp.body["message"]
+        error app_resp.body["message"] + " Please use `heroku ps:scale` to change process size and scale."
       end
 
       print "done. "
@@ -95,6 +95,10 @@ class Heroku::Command::Ps
     )
 
     tier_info = PROCESS_TIERS.detect { |t| t["tier"] == app_resp.body["process_tier"] }
+
+    if app_resp.body["process_tier"] == "legacy"
+      error "Process tiers are not available for this app. Please use `heroku ps:scale` to change process size and scale."
+    end
 
     ps_costs = formation_resp.body.map do |ps|
       cost = tier_info["cost"][ps["size"]] * ps["quantity"] / 100
