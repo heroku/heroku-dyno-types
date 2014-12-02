@@ -1,7 +1,7 @@
 PROCESS_TIERS = JSON.parse <<EOF
 [
   { "tier": "free",       "max_scale": 1,   "max_processes": 2,    "cost": { "Free": 0 } },
-  { "tier": "hobby",      "max_scale": 1,   "max_processes": null, "cost": { "Hobby": 900 } },
+  { "tier": "basic",      "max_scale": 1,   "max_processes": null, "cost": { "Basic": 900 } },
   { "tier": "production", "max_scale": 100, "max_processes": null, "cost": { "Production": 3000, "Performance": 50000 } },
   { "tier": "legacy",     "max_scale": 100, "max_processes": null, "cost": { "1X": 3600, "2X": 7200, "PX": 57600 } }
 ]
@@ -21,30 +21,30 @@ Heroku::Command::Ps.send(:remove_const, :PRICES)
 Heroku::Command::Ps.const_set(:PRICES, prices)
 
 class Heroku::Command::Ps
-  # ps:tier [free|hobby|production]
+  # ps:tier [free|basic|production]
   #
   # resize and scale all process types between different process tiers
   #
   #Examples:
   #
-  # $ heroku ps:tier 
+  # $ heroku ps:tier
   # Running web at 1:Free ($0/mo), worker at 1:Free ($0/mo).
   #
-  # $ heroku ps:tier hobby
-  # Changing process tier... done, now running web at 1:Hobby ($9/mo), worker at 1:Hobby ($9/mo)
+  # $ heroku ps:tier basic
+  # Changing process tier... done, now running web at 1:basic ($9/mo), worker at 1:basic ($9/mo)
   #
   # $ heroku ps:scale web=2
   # Scaling dynos... failed
-  #  !    Cannot scale to more than 1 Hobby size dynos per process type.
+  #  !    Cannot scale to more than 1 basic size dynos per process type.
   #
   # $ heroku ps:tier production
   # Changing process tier... done, now running web at 1:Production ($30/mo), worker at 1:Production ($30/mo).
   #
   # $ heroku ps:scale web=2
   # Scaling dynos... done, now running web at 2:Production.
-  # 
-  # $ heroku ps:tier hobby
-  # Changing process tier... done, now running web at 1:Hobby ($9/mo), worker at 1:Hobby ($9/mo)
+  #
+  # $ heroku ps:tier basic
+  # Changing process tier... done, now running web at 1:Basic ($9/mo), worker at 1:Basic ($9/mo)
 
   def tier
     app
