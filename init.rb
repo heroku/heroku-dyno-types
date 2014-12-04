@@ -1,9 +1,10 @@
 PROCESS_TIERS = JSON.parse <<EOF
 [
-  { "tier": "free",       "max_scale": 1,   "max_processes": 2,    "cost": { "Free": 0 } },
-  { "tier": "basic",      "max_scale": 1,   "max_processes": null, "cost": { "Basic": 900 } },
-  { "tier": "production", "max_scale": 100, "max_processes": null, "cost": { "Production": 3000, "Performance": 50000 } },
-  { "tier": "legacy",     "max_scale": 100, "max_processes": null, "cost": { "1X": 3600, "2X": 7200, "PX": 57600 } }
+  { "tier": "free",        "max_scale": 1,   "max_processes": 2,    "cost": { "Free": 0 } },
+  { "tier": "basic",       "max_scale": 1,   "max_processes": null, "cost": { "Basic": 700 } },
+  { "tier": "standard",    "max_scale": 100, "max_processes": null, "cost": { "Standard": 2500 } },
+  { "tier": "production",  "max_scale": 100, "max_processes": null, "cost": { "Production": 5000, "Performance": 50000 } },
+  { "tier": "traditional", "max_scale": 100, "max_processes": null, "cost": { "1X": 3600, "2X": 7200, "PX": 57600 } }
 ]
 EOF
 
@@ -21,7 +22,7 @@ Heroku::Command::Ps.send(:remove_const, :PRICES)
 Heroku::Command::Ps.const_set(:PRICES, prices)
 
 class Heroku::Command::Ps
-  # ps:tier [free|basic|production]
+  # ps:tier [traditional|free|standard|basic|production]
   #
   # resize and scale all process types between different process tiers
   #
@@ -55,10 +56,15 @@ class Heroku::Command::Ps
     if !process_tier.nil?
       print "Changing process tier... "
 
+      api_tier = process_tier.downcase
+      if api_tier == "traditional"
+        api_tier = nil
+      end
+
       app_resp = api.request(
         :method  => :patch,
         :path    => "/apps/#{app}",
-        :body    => json_encode("process_tier" => process_tier.downcase),
+        :body    => json_encode("process_tier" => api_tier),
         :headers => {
           "Accept"       => "application/vnd.heroku+json; version=edge",
           "Content-Type" => "application/json"
