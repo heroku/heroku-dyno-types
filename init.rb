@@ -1,8 +1,8 @@
 PROCESS_TIERS = JSON.parse <<EOF
 [
   { "tier": "free",        "max_scale": 1,   "max_processes": 2,    "cost": { "Free": 0 } },
-  { "tier": "basic",       "max_scale": 1,   "max_processes": null, "cost": { "Basic": 700 } },
-  { "tier": "standard",    "max_scale": 100, "max_processes": null, "cost": { "Standard": 2500 } },
+  { "tier": "hobby",       "max_scale": 1,   "max_processes": null, "cost": { "Hobby": 700 } },
+  { "tier": "basic",       "max_scale": 100, "max_processes": null, "cost": { "Basic": 2500 } },
   { "tier": "production",  "max_scale": 100, "max_processes": null, "cost": { "Production": 5000, "Performance": 50000 } },
   { "tier": "traditional", "max_scale": 100, "max_processes": null, "cost": { "1X": 3600, "2X": 7200, "PX": 57600 } }
 ]
@@ -22,7 +22,7 @@ Heroku::Command::Ps.send(:remove_const, :PRICES)
 Heroku::Command::Ps.const_set(:PRICES, prices)
 
 class Heroku::Command::Ps
-  # ps:tier [traditional|free|standard|basic|production]
+  # ps:tier [traditional|free|hobby|basic|production]
   #
   # resize and scale all process types between different process tiers
   #

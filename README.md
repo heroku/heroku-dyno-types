@@ -14,8 +14,8 @@
 
 ```
 heroku ps:tier free       --app yourapp
+heroku ps:tier hobby      --app yourapp
 heroku ps:tier basic      --app yourapp
-heroku ps:tier standard   --app yourapp
 heroku ps:tier production --app yourapp
 ```
 
