@@ -26,27 +26,6 @@ class Heroku::Command::Ps
   #
   # resize and scale all process types between different process tiers
   #
-  #Examples:
-  #
-  # $ heroku ps:tier
-  # Running web at 1:Free ($0/mo), worker at 1:Free ($0/mo).
-  #
-  # $ heroku ps:tier basic
-  # Changing process tier... done, now running web at 1:basic ($9/mo), worker at 1:basic ($9/mo)
-  #
-  # $ heroku ps:scale web=2
-  # Scaling dynos... failed
-  #  !    Cannot scale to more than 1 basic size dynos per process type.
-  #
-  # $ heroku ps:tier production
-  # Changing process tier... done, now running web at 1:Production ($30/mo), worker at 1:Production ($30/mo).
-  #
-  # $ heroku ps:scale web=2
-  # Scaling dynos... done, now running web at 2:Production.
-  #
-  # $ heroku ps:tier basic
-  # Changing process tier... done, now running web at 1:Basic ($9/mo), worker at 1:Basic ($9/mo)
-
   def tier
     app
     process_tier = shift_argument
