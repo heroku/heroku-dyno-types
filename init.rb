@@ -57,9 +57,6 @@ class Heroku::Command::Ps
       print "Changing process tier... "
 
       api_tier = process_tier.downcase
-      if api_tier == "traditional"
-        api_tier = nil
-      end
 
       app_resp = api.request(
         :method  => :patch,
