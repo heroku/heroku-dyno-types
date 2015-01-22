@@ -1,4 +1,4 @@
-PROCESS_TIERS = JSON.parse <<EOF
+PtestROCESS_TIERS = JSON.parse <<EOF
 [
   { "tier": "free",        "max_scale": 1,   "max_processes": 2,    "cost": { "Free": 0 } },
   { "tier": "hobby",       "max_scale": 1,   "max_processes": null, "cost": { "Hobby": 700 } },
@@ -78,7 +78,7 @@ class Heroku::Command::Ps
 
     tier_info = PROCESS_TIERS.detect { |t| t["tier"] == app_resp.body["process_tier"] }
 
-    if app_resp.body["process_tier"] == "legacy"
+    if app_resp.body["process_tier"] == "traditional"
       error "Process tiers are not available for this app. Please use `heroku ps:scale` to change process size and scale."
     end
 
