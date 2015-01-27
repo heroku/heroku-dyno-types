@@ -82,7 +82,8 @@ class Heroku::Command::Ps
       error "Process tiers are not available for this app. Please use `heroku ps:scale` to change process size and scale."
     end
 
-    ps_costs = formation_resp.body.map do |ps|
+    formation = formation_resp.body.reject {|ps| ps['quantity'] < 1}
+    ps_costs = formation.map do |ps|
       cost = tier_info["cost"][ps["size"]] * ps["quantity"] / 100
       "#{ps['type']} at #{ps['quantity']}:#{ps["size"]} ($#{cost}/mo)"
     end
