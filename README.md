@@ -6,11 +6,11 @@
 
 `heroku labs:enable new-dyno-sizes --app yourapp`
 
-## see current process tier
+## see current dyno tier
 
 `heroku ps:tier --app yourapp`
 
-## change process tier
+## change dyno tier
 
 ```
 heroku ps:tier free       --app yourapp
