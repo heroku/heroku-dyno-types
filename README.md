@@ -1,22 +1,22 @@
 ## installation
 
-`heroku plugins:install https://github.com/heroku/heroku-process-tiers.git`
+`heroku plugins:install https://github.com/heroku/heroku-dyno-types.git`
 
-## enable new tiers to an app
+## enable new dyno types to an app
 
 `heroku labs:enable new-dyno-sizes --app yourapp`
 
-## see current dyno tier
+## see current dyno type
 
-`heroku ps:tier --app yourapp`
+`heroku ps:type --app yourapp`
 
-## change dyno tier
+## change dyno type
 
 ```
-heroku ps:tier free       --app yourapp
-heroku ps:tier hobby      --app yourapp
-heroku ps:tier basic      --app yourapp
-heroku ps:tier production --app yourapp
+heroku ps:type free       --app yourapp
+heroku ps:type hobby      --app yourapp
+heroku ps:type basic      --app yourapp
+heroku ps:type production --app yourapp
 ```
 
 

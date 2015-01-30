@@ -22,18 +22,18 @@ Heroku::Command::Ps.send(:remove_const, :PRICES)
 Heroku::Command::Ps.const_set(:PRICES, prices)
 
 class Heroku::Command::Ps
-  # ps:tier [traditional|free|hobby|basic|production]
+  # ps:type [traditional|free|hobby|basic|production]
   #
-  # resize and scale all process types between different process tiers
+  # resize and scale all dynos between different dyno types
   #
-  def tier
+  def type
     app
     process_tier = shift_argument
     validate_arguments!
 
     # get or update app.process_tier
     if !process_tier.nil?
-      print "Changing process tier... "
+      print "Changing dyno type... "
 
       api_tier = process_tier.downcase
 
@@ -79,7 +79,7 @@ class Heroku::Command::Ps
     tier_info = PROCESS_TIERS.detect { |t| t["tier"] == app_resp.body["process_tier"] }
 
     if app_resp.body["process_tier"] == "traditional"
-      error "Process tiers are not available for this app. Please use `heroku ps:scale` to change process size and scale."
+      error "Dyno types are not available for this app. Please use `heroku ps:scale` to change process size and scale."
     end
 
     formation = formation_resp.body.reject {|ps| ps['quantity'] < 1}
