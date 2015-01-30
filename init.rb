@@ -52,7 +52,7 @@ class Heroku::Command::Ps
         error app_resp.body["message"] + " Please use `heroku ps:scale` to change process size and scale."
       end
 
-      print "done. "
+      puts "done."
     else
       app_resp = api.request(
         :expects => 200,
@@ -78,9 +78,7 @@ class Heroku::Command::Ps
 
     tier_info = PROCESS_TIERS.detect { |t| t["tier"] == app_resp.body["process_tier"] }
 
-    if app_resp.body["process_tier"] == "traditional"
-      error "Dyno types are not available for this app. Please use `heroku ps:scale` to change process size and scale."
-    end
+    puts "Dyno type: #{app_resp.body["process_tier"]}"
 
     formation = formation_resp.body.reject {|ps| ps['quantity'] < 1}
     ps_costs = formation.map do |ps|
