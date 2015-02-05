@@ -8,15 +8,15 @@
 
 ## see current dyno type
 
-`heroku ps:type --app yourapp`
+`heroku dyno:resize --app yourapp`
 
 ## change dyno type
 
 ```
-heroku ps:type free       --app yourapp
-heroku ps:type hobby      --app yourapp
-heroku ps:type basic      --app yourapp
-heroku ps:type production --app yourapp
+heroku dyno:resize free       --app yourapp
+heroku dyno:resize hobby      --app yourapp
+heroku dyno:resize basic      --app yourapp
+heroku dyno:resize production --app yourapp
 ```
 
 

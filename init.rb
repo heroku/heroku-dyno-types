@@ -22,11 +22,24 @@ Heroku::Command::Ps.send(:remove_const, :PRICES)
 Heroku::Command::Ps.const_set(:PRICES, prices)
 
 class Heroku::Command::Ps
-  # ps:type [traditional|free|hobby|basic|production]
+  alias_method :_original_resize, :resize
+  # ps:resize [TYPE | DYNO=TYPE [DYNO=TYPE ...]]
   #
-  # resize and scale all dynos between different dyno types
+  # manage dyno types
   #
-  def type
+  # called with no arguments shows the current dyno type
+  #
+  # called with one argument sets the type
+  # where type is one of traditional|free|hobby|basic|production
+  #
+  # called with 1..n DYNO=TYPE arguments sets the type per dyno
+  # this is only available when the app is on production and performance
+  #
+  def resize
+    if args.any?{|arg| arg =~ /=/}
+      _original_resize
+      return
+    end
     app
     process_tier = shift_argument
     validate_arguments!
@@ -96,3 +109,9 @@ class Heroku::Command::Ps
     end
   end
 end
+
+
+%w[resize restart scale stop].each do |cmd|
+  Heroku::Command::Base.alias_command "dyno:#{cmd}", "ps:#{cmd}"
+end
+
