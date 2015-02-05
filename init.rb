@@ -23,7 +23,7 @@ Heroku::Command::Ps.const_set(:PRICES, prices)
 
 class Heroku::Command::Ps
   alias_method :_original_resize, :resize
-  # ps:resize [TYPE | DYNO=TYPE [DYNO=TYPE ...]]
+  # ps:type [TYPE | DYNO=TYPE [DYNO=TYPE ...]]
   #
   # manage dyno types
   #
@@ -35,60 +35,55 @@ class Heroku::Command::Ps
   # called with 1..n DYNO=TYPE arguments sets the type per dyno
   # this is only available when the app is on production and performance
   #
-  def resize
+  def type
     if args.any?{|arg| arg =~ /=/}
       _original_resize
       return
     end
+
     app
     process_tier = shift_argument
     validate_arguments!
 
     # get or update app.process_tier
-    if !process_tier.nil?
-      print "Changing dyno type... "
-
-      api_tier = process_tier.downcase
-
-      app_resp = api.request(
-        :method  => :patch,
-        :path    => "/apps/#{app}",
-        :body    => json_encode("process_tier" => api_tier),
-        :headers => {
-          "Accept"       => "application/vnd.heroku+json; version=edge",
-          "Content-Type" => "application/json"
-        }
-      )
-
-      if app_resp.status != 200
-        puts "failed"
-        error app_resp.body["message"] + " Please use `heroku ps:scale` to change process size and scale."
-      end
-
-      puts "done."
-    else
-      app_resp = api.request(
-        :expects => 200,
-        :method  => :get,
-        :path    => "/apps/#{app}",
-        :headers => {
-          "Accept"       => "application/vnd.heroku+json; version=edge",
-          "Content-Type" => "application/json"
-        }
-      )
-    end
+    app_resp = process_tier.nil? ? edge_app_info : change_dyno_type(process_tier)
 
     # get, calculate and display app process type costs
-    formation_resp = api.request(
-      :expects => 200,
-      :method  => :get,
-      :path    => "/apps/#{app}/formation",
+    formation_resp = edge_app_formation
+
+    display_dyno_type_and_costs(app_resp, formation_resp)
+  end
+
+  alias_method :resize, :type
+
+  private
+
+  def change_dyno_type(process_tier)
+    print "Changing dyno type... "
+
+    api_tier = process_tier.downcase
+
+    app_resp = api.request(
+      :method  => :patch,
+      :path    => "/apps/#{app}",
+      :body    => json_encode("process_tier" => api_tier),
       :headers => {
-        "Accept"       => "application/vnd.heroku+json; version=3",
+        "Accept"       => "application/vnd.heroku+json; version=edge",
         "Content-Type" => "application/json"
       }
     )
 
+    if app_resp.status != 200
+      puts "failed"
+      error app_resp.body["message"] + " Please use `heroku ps:scale` to change process size and scale."
+    end
+
+    puts "done."
+
+    return app_resp
+  end
+
+  def display_dyno_type_and_costs(app_resp, formation_resp)
     tier_info = PROCESS_TIERS.detect { |t| t["tier"] == app_resp.body["process_tier"] }
 
     puts "Dyno type: #{app_resp.body["process_tier"]}"
@@ -108,10 +103,34 @@ class Heroku::Command::Ps
       puts "Running #{ps_costs.join(', ')}."
     end
   end
+
+  def edge_app_info
+    api.request(
+      :expects => 200,
+      :method  => :get,
+      :path    => "/apps/#{app}",
+      :headers => {
+        "Accept"       => "application/vnd.heroku+json; version=edge",
+        "Content-Type" => "application/json"
+      }
+    )
+  end
+
+  def edge_app_formation
+    api.request(
+      :expects => 200,
+      :method  => :get,
+      :path    => "/apps/#{app}/formation",
+      :headers => {
+        "Accept"       => "application/vnd.heroku+json; version=3",
+        "Content-Type" => "application/json"
+      }
+    )
+  end
 end
 
 
-%w[resize restart scale stop].each do |cmd|
+%w[type restart scale stop].each do |cmd|
   Heroku::Command::Base.alias_command "dyno:#{cmd}", "ps:#{cmd}"
 end
 
