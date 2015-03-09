@@ -2,8 +2,7 @@ PROCESS_TIERS = JSON.parse <<EOF
 [
   { "tier": "free",        "max_scale": 1,   "max_processes": 2,    "cost": { "Free": 0 } },
   { "tier": "hobby",       "max_scale": 1,   "max_processes": null, "cost": { "Hobby": 700 } },
-  { "tier": "basic",       "max_scale": 100, "max_processes": null, "cost": { "Basic": 2500 } },
-  { "tier": "production",  "max_scale": 100, "max_processes": null, "cost": { "Production": 5000, "Performance": 50000 } },
+  { "tier": "production",  "max_scale": 100, "max_processes": null, "cost": { "Standard-1X": 2500, "Standard-2X": 5000, "Performance": 50000 } },
   { "tier": "traditional", "max_scale": 100, "max_processes": null, "cost": { "1X": 3600, "2X": 7200, "PX": 57600 } }
 ]
 EOF
@@ -22,7 +21,6 @@ Heroku::Command::Ps.send(:remove_const, :PRICES)
 Heroku::Command::Ps.const_set(:PRICES, prices)
 
 class Heroku::Command::Ps
-  alias_method :_original_resize, :resize
   # ps:type [TYPE | DYNO=TYPE [DYNO=TYPE ...]]
   #
   # manage dyno types
@@ -126,6 +124,51 @@ class Heroku::Command::Ps
         "Content-Type" => "application/json"
       }
     )
+  end
+
+
+  def _original_resize
+    app
+    change_map = {}
+
+    changes = args.map do |arg|
+      if arg =~ /^([a-zA-Z0-9_]+)=([\w-]+)$/
+        change_map[$1] = $2
+        { "process" => $1, "size" => $2 }
+      end
+    end.compact
+
+    if changes.empty?
+      message = [
+          "Usage: heroku dyno:type DYNO1=1X|2X|PX [DYNO2=1X|2X|PX ...]",
+          "Must specify DYNO and TYPE to resize."
+      ]
+      error(message.join("\n"))
+    end
+
+    resp = nil
+    action("Resizing and restarting the specified dynos") do
+      resp = api.request(
+        :expects => 200,
+        :method  => :patch,
+        :path    => "/apps/#{app}/formation",
+        :body    => json_encode("updates" => changes),
+        :headers => {
+          "Accept"       => "application/vnd.heroku+json; version=3",
+          "Content-Type" => "application/json"
+        }
+      )
+    end
+
+    resp.body.select {|p| change_map.key?(p['type']) }.each do |p|
+      size = p["size"]
+      price = if size.to_i > 0
+                sprintf("%.2f", 0.05 * size.to_i)
+              else
+                sprintf("%.2f", PRICES[size])
+              end
+      display "#{p["type"]} dynos now #{size} ($#{price}/dyno-hour)"
+    end
   end
 end
 
