@@ -34,7 +34,8 @@ class Heroku::Command::Ps
     end
 
     app
-    process_tier = shift_argument.downcase
+    process_tier = shift_argument
+    process_tier.downcase! if process_tier
     validate_arguments!
 
     if %w[standard-1x standard-2x performance].include?(process_tier)
