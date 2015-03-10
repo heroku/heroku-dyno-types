@@ -7,18 +7,12 @@ PROCESS_TIERS = JSON.parse <<EOF
 ]
 EOF
 
-# calculate approximate dollars per hour for each dyno type
 costs = PROCESS_TIERS.collect do |tier|
   tier["cost"].collect do |name, cents_per_month|
-    [name, (cents_per_month / 720.0).floor / 100.0]
+    [name, (cents_per_month / 100)]
   end
 end
-
-# redefine Heroku::Command:Ps::PRICES without warning
-# http://stackoverflow.com/questions/3375360/how-to-redefine-a-ruby-constant-without-warning
-prices = Hash[*costs.flatten]
-Heroku::Command::Ps.send(:remove_const, :PRICES)
-Heroku::Command::Ps.const_set(:PRICES, prices)
+COSTS = Hash[*costs.flatten]
 
 class Heroku::Command::Ps
   # ps:type [TYPE | DYNO=TYPE [DYNO=TYPE ...]]
@@ -174,12 +168,7 @@ class Heroku::Command::Ps
 
     resp.body.select {|p| change_map.key?(p['type']) }.each do |p|
       size = p["size"]
-      price = if size.to_i > 0
-                sprintf("%.2f", 0.05 * size.to_i)
-              else
-                sprintf("%.2f", PRICES[size])
-              end
-      display "#{p["type"]} dynos now #{size} ($#{price}/dyno-hour)"
+      display "#{p["type"]} dynos now #{size} ($#{COSTS[size]}/month)"
     end
   end
 end
