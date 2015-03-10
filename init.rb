@@ -43,6 +43,11 @@ class Heroku::Command::Ps
     process_tier = shift_argument.downcase
     validate_arguments!
 
+    if %w[standard-1x standard-2x performance].include?(process_tier)
+      special_case_change_tier_and_resize(process_tier)
+      return
+    end
+
     # get or update app.process_tier
     app_resp = process_tier.nil? ? edge_app_info : change_dyno_type(process_tier)
 
@@ -59,15 +64,7 @@ class Heroku::Command::Ps
   def change_dyno_type(process_tier)
     print "Changing dyno type... "
 
-    app_resp = api.request(
-      :method  => :patch,
-      :path    => "/apps/#{app}",
-      :body    => json_encode("process_tier" => process_tier),
-      :headers => {
-        "Accept"       => "application/vnd.heroku+json; version=edge",
-        "Content-Type" => "application/json"
-      }
-    )
+    app_resp = patch_tier(process_tier)
 
     if app_resp.status != 200
       puts "failed"
@@ -77,6 +74,18 @@ class Heroku::Command::Ps
     puts "done."
 
     return app_resp
+  end
+
+  def patch_tier(process_tier)
+    api.request(
+      :method  => :patch,
+      :path    => "/apps/#{app}",
+      :body    => json_encode("process_tier" => process_tier),
+      :headers => {
+        "Accept"       => "application/vnd.heroku+json; version=edge",
+        "Content-Type" => "application/json"
+      }
+    )
   end
 
   def display_dyno_type_and_costs(app_resp, formation_resp)
@@ -124,12 +133,17 @@ class Heroku::Command::Ps
     )
   end
 
+  def special_case_change_tier_and_resize(type)
+    patch_tier("production")
+    override_args = edge_app_formation.body.map { |ps| "#{ps['type']}=#{type}" }
+    _original_resize(override_args)
+  end
 
-  def _original_resize
+  def _original_resize(override_args=nil)
     app
     change_map = {}
 
-    changes = args.map do |arg|
+    changes = (override_args || args).map do |arg|
       if arg =~ /^([a-zA-Z0-9_]+)=([\w-]+)$/
         change_map[$1] = $2
         { "process" => $1, "size" => $2 }
