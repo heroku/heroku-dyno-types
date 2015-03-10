@@ -40,7 +40,7 @@ class Heroku::Command::Ps
     end
 
     app
-    process_tier = shift_argument
+    process_tier = shift_argument.downcase
     validate_arguments!
 
     # get or update app.process_tier
@@ -59,12 +59,10 @@ class Heroku::Command::Ps
   def change_dyno_type(process_tier)
     print "Changing dyno type... "
 
-    api_tier = process_tier.downcase
-
     app_resp = api.request(
       :method  => :patch,
       :path    => "/apps/#{app}",
-      :body    => json_encode("process_tier" => api_tier),
+      :body    => json_encode("process_tier" => process_tier),
       :headers => {
         "Accept"       => "application/vnd.heroku+json; version=edge",
         "Content-Type" => "application/json"
