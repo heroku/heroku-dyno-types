@@ -86,22 +86,19 @@ class Heroku::Command::Ps
   def display_dyno_type_and_costs(app_resp, formation_resp)
     tier_info = PROCESS_TIERS.detect { |t| t["tier"] == app_resp.body["process_tier"] }
 
-    puts "Dyno type: #{app_resp.body["process_tier"]}"
-
     formation = formation_resp.body.reject {|ps| ps['quantity'] < 1}
-    ps_costs = formation.map do |ps|
-      cost = tier_info["cost"][ps["size"]] * ps["quantity"] / 100
-      "#{ps['type']} at #{ps['quantity']}:#{ps["size"]} ($#{cost}/mo)"
+
+    annotated = formation.sort_by{|d| d['type']}.map do |dyno|
+      cost = tier_info["cost"][dyno["size"]] * dyno["quantity"] / 100
+      {
+        'dyno' => dyno['type'],
+        'type' => dyno['size'],
+        'qty'  => dyno['quantity'].to_s.rjust(3),
+        'cost/mo' => cost.to_s.rjust(7)
+      }
     end
 
-    if ps_costs.empty?
-      ps_costs = tier_info["cost"].map do |size, cost|
-        "#{size} ($#{cost/100}/mo)"
-      end
-      puts "Running no #{ps_costs.join(", ")} processes."
-    else
-      puts "Running #{ps_costs.join(', ')}."
-    end
+    display_table(annotated, annotated.first.keys, annotated.first.keys)
   end
 
   def edge_app_info
