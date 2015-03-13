@@ -3,7 +3,7 @@ PROCESS_TIERS = JSON.parse <<EOF
   { "tier": "free",        "max_scale": 1,   "max_processes": 2,    "cost": { "Free": 0 } },
   { "tier": "hobby",       "max_scale": 1,   "max_processes": null, "cost": { "Hobby": 700 } },
   { "tier": "production",  "max_scale": 100, "max_processes": null, "cost": { "Standard-1X": 2500, "Standard-2X": 5000, "Performance": 50000 } },
-  { "tier": "traditional", "max_scale": 100, "max_processes": null, "cost": { "1X": 3600, "2X": 7200, "PX": 57600 } }
+  { "tier": "traditional", "max_scale": 100, "max_processes": null, "cost": {          "1X": 3600,          "2X": 7200,          "PX": 57600 } }
 ]
 EOF
 
@@ -91,9 +91,9 @@ class Heroku::Command::Ps
     annotated = formation.sort_by{|d| d['type']}.map do |dyno|
       cost = tier_info["cost"][dyno["size"]] * dyno["quantity"] / 100
       {
-        'dyno' => dyno['type'],
-        'type' => dyno['size'],
-        'qty'  => dyno['quantity'].to_s.rjust(3),
+        'dyno'    => dyno['type'],
+        'type'    => dyno['size'].rjust(4),
+        'qty'     => dyno['quantity'].to_s.rjust(3),
         'cost/mo' => cost.to_s.rjust(7)
       }
     end
