@@ -22,7 +22,7 @@ class Heroku::Command::Ps
   # called with no arguments shows the current dyno type
   #
   # called with one argument sets the type
-  # where type is one of traditional|free|hobby|basic|production
+  # where type is one of traditional|free|hobby|standard-1x|standard-2x|performance
   #
   # called with 1..n DYNO=TYPE arguments sets the type per dyno
   # this is only available when the app is on production and performance

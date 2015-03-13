@@ -13,10 +13,11 @@
 ## change dyno type
 
 ```
-heroku dyno:type free       --app yourapp
-heroku dyno:type hobby      --app yourapp
-heroku dyno:type basic      --app yourapp
-heroku dyno:type production --app yourapp
+heroku dyno:type free        --app yourapp
+heroku dyno:type hobby       --app yourapp
+heroku dyno:type standard-1x --app yourapp
+heroku dyno:type standard-2x --app yourapp
+heroku dyno:type performance --app yourapp
 ```
 
 
