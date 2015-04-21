@@ -1,3 +1,5 @@
+require 'json'
+
 PROCESS_TIERS = JSON.parse <<EOF
 [
   { "tier": "free",        "max_scale": 1,   "max_processes": 2,    "cost": { "Free": 0 } },
