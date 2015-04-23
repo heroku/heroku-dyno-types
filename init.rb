@@ -100,6 +100,9 @@ class Heroku::Command::Ps
       }
     end
 
+    # in case of an app not yet released
+    annotated = [tier_info] if annotated.empty?
+
     display_table(annotated, annotated.first.keys, annotated.first.keys)
   end
 
