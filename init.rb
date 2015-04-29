@@ -1,3 +1,5 @@
+require 'json'
+
 PROCESS_TIERS = JSON.parse <<EOF
 [
   { "tier": "free",        "max_scale": 1,   "max_processes": 2,    "cost": { "Free": 0 } },
@@ -97,6 +99,9 @@ class Heroku::Command::Ps
         'cost/mo' => cost.to_s.rjust(7)
       }
     end
+
+    # in case of an app not yet released
+    annotated = [tier_info] if annotated.empty?
 
     display_table(annotated, annotated.first.keys, annotated.first.keys)
   end
